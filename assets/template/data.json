@@ -1,0 +1,90 @@
+{
+  "snapshot": "1970-01-01",
+  "checked": "尚未采集",
+  "scope": "尚未收录",
+  "scopeDescription": "尚未完成首次收录。",
+  "items": [],
+  "tasks": [],
+  "legacyItems": [],
+  "threads": [],
+  "dailySummaries": {},
+  "types": [
+    {
+      "id": "coding-tools",
+      "name": "编程与工具",
+      "description": "开发软件或自动化，配置、使用和修复工具。",
+      "examples": [
+        "开发网站",
+        "编写脚本",
+        "软件测试",
+        "插件安装",
+        "设备故障排查"
+      ]
+    },
+    {
+      "id": "writing-editing",
+      "name": "写作与编辑",
+      "description": "以文字表达为主要目标，起草、改写、翻译和润色。",
+      "examples": [
+        "文章",
+        "邮件",
+        "文案",
+        "口播稿",
+        "简历修改"
+      ]
+    },
+    {
+      "id": "design-production",
+      "name": "设计与制作",
+      "description": "以视觉、声音或交互作品为主要成果。",
+      "examples": [
+        "界面设计",
+        "图片",
+        "视频",
+        "音频",
+        "演示文稿"
+      ]
+    },
+    {
+      "id": "learning-research",
+      "name": "学习与研究",
+      "description": "理解知识、搜集证据、分析资料或数据，形成认识。",
+      "examples": [
+        "读书",
+        "课程学习",
+        "论文解读",
+        "市场调研",
+        "数据分析"
+      ]
+    },
+    {
+      "id": "planning-decisions",
+      "name": "规划与决策",
+      "description": "明确目标、比较选择、制定方案或复盘取舍。",
+      "examples": [
+        "项目规划",
+        "职业选择",
+        "产品方向",
+        "旅行计划",
+        "购买方案比较"
+      ]
+    },
+    {
+      "id": "organization-admin",
+      "name": "整理与事务",
+      "description": "整理已有信息或处理具体日常事务。",
+      "examples": [
+        "文件归档",
+        "笔记分类",
+        "会议记录整理",
+        "清单维护",
+        "日程安排"
+      ]
+    },
+    {
+      "id": "unclassified",
+      "name": "未分类",
+      "description": "证据不足或现有类型不适合时暂留，不强行归类。"
+    }
+  ]
+}

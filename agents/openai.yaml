@@ -1,0 +1,5 @@
+interface:
+  display_name: "Codex 对话整理工作台"
+  short_description: "初始化本地对话工作台，按事情整理原文，并安全执行手动与定时更新"
+  brand_color: "#ADD84A"
+  default_prompt: "使用 $lukk-codex-workbench 帮我建立或更新本地对话整理工作台。"
