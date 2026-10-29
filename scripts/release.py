@@ -84,7 +84,8 @@ def release(root, candidate, review_path):
     w.atomic(Path(candidate) / 'quality-receipt.json', w.encode(receipt))
     result = w.publish(root, candidate, expected_sha=receipt['candidateSha256'])
     w.atomic(Path(candidate) / 'published.json', w.encode(result))
-    return {**result, 'quality': receipt}
+    return {**result, 'quality': receipt,
+            'nextAction': '本批发布不是初始化完成。先更新 history-collection.json 的本批进度，然后运行当前 Skill 的 scripts/next_step.py <工作台>，按返回的具体动作继续；预览地址用进度消息提供。'}
 
 
 def main():
