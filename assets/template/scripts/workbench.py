@@ -267,12 +267,14 @@ def replace_live(root, raw, action):
     return {'status': action, 'backup': str(backup), 'sha256': sha(raw)}
 
 
-def publish(root, candidate):
+def publish(root, candidate, expected_sha=None):
     root, candidate = Path(root), Path(candidate)
     with lock(root):
         report = read(candidate / 'report.json')
         raw = (candidate / 'data.json').read_bytes()
         require(sha(raw) == report['candidateSha256'], '候选文件已被改动，请重新准备')
+        if expected_sha is not None:
+            require(sha(raw) == expected_sha, '候选在质量检查后变化，请重新检查')
         require(config_hash(root) == report['configSha256'], '分类配置已变化，请重新准备')
         require(sha((root / 'data.json').read_bytes()) == report['baseSha256'], '正式数据已更新，请重新准备，不能覆盖其他批次')
         return replace_live(root, raw, 'published')

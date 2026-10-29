@@ -26,7 +26,7 @@
 
 ## 2. 整理成批次
 
-读 curation.md。检索已有目标，更新对应事项。每个 upsert 是**完整记录**，已有节点与消息会按 ID 合并保留，但顶层摘要等字段以本批完整记录为准。只补历史时保持当前最新小结与 date，不将旧状态当最新。thread.date 同样保持合并后最新消息日期；不能把本批旧消息的日期写成窗口最新日期。保留已有相关事项与分支。
+读 curation.md 和 [整理与发布检查](quality-review.md)。优先完成已读未整理的区段；本批完整检查后再扩展新批次。检索已有目标，更新对应事项。每个 upsert 是**完整记录**，已有节点与消息会按 ID 合并保留，但顶层摘要等字段以本批完整记录为准。只补历史时保持当前最新小结与 date，不将旧状态当最新。thread.date 同样保持合并后最新消息日期；不能把本批旧消息的日期写成窗口最新日期。保留已有相关事项与分支。
 
 `python3 scripts/workbench.py hash data.json` 得到 baseSha256，写入 batch.json；从读取这个基线开始整理。同批 `provenance` 记录每个已读/失败窗口及范围。`scopeDescription` 应准确描述累计实际覆盖，不宣称全量，不只写本次新增数。时间窗口固定在本次开始时刻。参照 data-contract.md。
 
@@ -34,23 +34,24 @@
 
 ## 3. 候选、验证、发布
 
-以下路径均相对于选定的工作台，命令参数按实际路径安全引用：
+先按 quality-review.md 对准备后的候选填写检查记录。以下工作台路径相对于选定目录；`<Skill>` 替换为当前安装 Skill 的绝对目录（release.py 使用当前 Skill 的发布逻辑，兼容原数据契约），命令参数按实际路径安全引用：
 
 ```sh
 python3 scripts/workbench.py prepare . .workbench/runs/<批次>/batch.json .workbench/runs/<批次>/candidate
 python3 scripts/workbench.py validate .workbench/runs/<批次>/candidate/data.json
-python3 scripts/workbench.py publish . .workbench/runs/<批次>/candidate
+python3 <Skill>/scripts/release.py . .workbench/runs/<批次>/candidate .workbench/runs/<批次>/quality-review.json --check-only
+python3 <Skill>/scripts/release.py . .workbench/runs/<批次>/candidate .workbench/runs/<批次>/quality-review.json
 ```
 
 prepare 不修改正式数据，会检查：唯一 ID、节点与原文/日期/角色一致、上下文、决定/任务/关联引用、有效分类、旧状态不能覆盖新状态。候选报告绑定基线、分类配置与候选文件哈希。publish 会加进程锁，检查基线是否变化，先备份再原子替换。
 
 发布前核对报告：新增事项是否重复、原有 ID 是否保留、关键摘要和接续状态是否符合原文。需要修正候选时改 batch 并在**新的候选目录**重新 prepare，不手改候选文件绕过哈希。
 
-发布成功将返回状态、备份位置及新哈希。保存返回结果为该运行目录 `published.json`，连同 candidate/report.json 用于继续。即使来不及写成功回执，也可比对正式文件与候选哈希确认是否已发布，不能盲目再执行。相同内容返回 unchanged，不制造额外备份。
+发布成功将返回状态、备份位置及新哈希。release 自动保存 `candidate/published.json` 与 `candidate/quality-receipt.json`，连同 candidate/report.json 用于继续；旧批次的运行目录 published.json 仍可作为历史证据。即使来不及写成功回执，也可比对正式文件与候选哈希确认是否已发布，不能盲目再执行。相同内容返回 unchanged，不制造额外备份。
 
 ## 4. 页面验收与完成
 
-使用已保存的同一地址，刷新网页（不改端口、不清浏览器存储）。检查涉及的事项/来源、当天时间轴，挑一个关键词或记不清原话的搜索，确认可定位原文。初次还要检查空页到有内容的转换。不为了测试更改用户的真实收藏或移出选择。
+使用已保存的同一地址，刷新网页（不改端口、不清浏览器存储）。检查涉及的事项/来源、当天时间轴，挑一个关键词或记不清原话的搜索，确认可定位原文。初次还要检查空页到有内容的转换。检查接续结果（含合法空列表）是否有复核依据，抽查节点和每日小结是否写出具体内容，不能只验证页面能打开。不为了测试更改用户的真实收藏或移出选择。
 
 报告实际更新量、覆盖终点、失败缺口，附本地地址。不要宣称脚本完成了语义判断，也不要承诺任何记忆偏差都能搜到。
 

@@ -15,7 +15,7 @@ description: 初始化或更新本地 Codex 对话整理工作台，按事情汇
 - 已有工作台找不到、重启后打不开、升级 Skill：读 [打开与维护](references/maintenance.md)，不重新初始化。
 - 发布失败、恢复上次数据：按更新流程中的恢复部分执行；不要从零覆盖重建。
 
-每次整理正文前读 [整理标准](references/curation.md)；构建批次时读 [数据契约](references/data-contract.md)。脚本只做结构与引用检查，不能替代对内容含义的判断。
+每次整理正文前读 [整理标准](references/curation.md)；构建批次时读 [数据契约](references/data-contract.md)。每批按 [整理与发布检查](references/quality-review.md) 核对受影响事项，并用当前 Skill 的 release.py 发布。原文已收录不等于整理完成；脚本只做结构与引用检查，不能替代对内容含义的判断。
 
 ## 不变的约束
 
