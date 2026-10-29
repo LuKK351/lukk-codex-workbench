@@ -6,6 +6,8 @@
 
 脚本是工作台目录中的 `scripts/workbench.py`，需要 Python 3.9+ 与可用的 IANA 时区数据；Windows 使用 msvcrt 字节锁，macOS/Linux 使用 fcntl。优先使用 config/workbench.json 中的 pythonExecutable，否则检测本机解释器；将下方 python3 替换为该解释器。Windows 适配已实现，当前尚无 Windows 实机验证；自检入口见 first-use.md。脚本不调用模型或 Codex，不自动抓取对话；你负责读取、理解和构造有证据的批次。
 
+先读取 `.workbench/history-collection.json`。若首次历史尚未完成，按 [历史收录与完成检查](history-collection.md) 继续待处理清单；“更新”同时补齐原授权历史和新增内容，不只处理今天。用户明确只要新增时按其要求执行，并保留历史缺口。旧工作台没有清单时，从配置、已发布批次与来源证据重建，不能把已有数据的最早日期当成覆盖起点。
+
 ## 1. 读取来源与保存进度
 
 发现可用的 Codex `list_threads`、`read_thread` 或明确提供完整正文的工具。先从目录挑选候选，按消息/回合 ID 增量读取，分页到上次成功采集点；首次/新窗口到授权范围起点。目录更新时间不能当消息时间，也不能当全量覆盖证明。
