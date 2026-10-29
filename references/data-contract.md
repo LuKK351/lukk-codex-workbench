@@ -22,7 +22,7 @@
 {"id":"真实窗口ID","title":"原始窗口标题","date":"2026-10-28T09:00:00+08:00","checked":"2026-10-28","messages":[{"id":"真实稳定消息ID","role":"user","text":"原文","date":"2026-10-28T09:00:00+08:00","timePrecision":"轮次开始时间"}]}
 ```
 
-role 只允许 user/assistant。date 是实际来源时间，不是采集时刻。thread.date 为已收录最新消息时间。同 ID 的已有消息必须一致，不静默改写。增量可只提供新增 messages，脚本合并旧记录。按日期升序传入。
+role 只允许 user/assistant。date 是实际来源时间，不是采集时刻。thread.date 必须等于合并后已收录最新消息时间。同 ID 的已有消息必须一致，不静默改写。增量可只提供新增 messages，脚本合并旧记录。按日期升序传入。
 
 ## item
 
@@ -30,7 +30,7 @@ role 只允许 user/assistant。date 是实际来源时间，不是采集时刻�
 {"id":"稳定事项ID","title":"对象与目标","description":"目标背景","status":"有证据的进展","summary":"两三句当前小结","recap":"取舍过程","openQuestion":"尚未明确的部分，没有则空字符串","nextUse":"有依据的回看用途，没有则空字符串","date":"2026-10-28T09:00:00+08:00","type":"coding-tools","terms":["搜索别名"],"related":[],"workBranches":[],"collection":"main","nodes":[],"decisions":[]}
 ```
 
-实际事项至少应有一个有证据节点。date 为最新相关节点时间；补历史不回退摘要。related 只引用已存在或同批新增的事项 ID。type 必须在用户配置内，用户 overrides 优先。nodes 按日期排序；脚本按 ID 保留历史节点，decisions 和 terms 追加去重。分支、关联等其他数组由完整 upsert 保留。
+实际事项至少应有一个有证据节点。date 必须等于合并后该事项最新相关节点时间；补历史不回退摘要。related 只引用已存在或同批新增的事项 ID。type 必须在用户配置内，用户 overrides 优先。nodes 按日期排序；脚本按 ID 保留历史节点，decisions 和 terms 追加去重。分支、关联等其他数组由完整 upsert 保留。
 
 ## node 与 decision
 
@@ -49,3 +49,7 @@ decision：`{"text":"用户明确的决定或有标注的变化","label":"明确
 ```
 
 level 只取“有明确接续”或“状态待核实”。网页会根据浏览器中用户的确认/移出选择改变显示，不从浏览器选择反推真实完成状态。
+
+## 日期一致性检查
+
+prepare、validate 和发布流程都会检查上述两项日期关系，比较实际时刻而非字符串顺序；等价时区写法可通过。错误会列出事项或对话 ID、当前日期与最新记录日期，并停止发布。新增讨论后更新所属记录的 date；补录旧讨论保留已有较晚 date。不要为了通过检查修改原文日期，也不要用同一窗口里无关消息的时间更新某个事项。旧版候选日期不一致时，修正完整批次后重新 prepare 和复核，不能只更新哈希或直接覆盖正式数据。

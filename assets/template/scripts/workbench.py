@@ -113,6 +113,16 @@ def text_fields(row, fields, label):
         require(isinstance(row.get(field), str), label + ' 缺少文本字段 ' + field)
 
 
+def latest_date_matches(row, children, label):
+    # Compare instants, not ISO text or collection order. Backfills may use
+    # another offset and arrive after newer records have already been stored.
+    if children:
+        latest = max(children, key=lambda child: date(child['date']))['date']
+        require(date(row['date']) == date(latest),
+                label + '日期不一致: ' + row['id'] + '，当前 ' + row['date'] +
+                '，最新记录 ' + latest + '；请核对完整记录后重新准备候选')
+
+
 def validate(data):
     text_fields(data, ('snapshot', 'checked', 'scopeDescription'), '数据')
     date(data['snapshot'])
@@ -130,6 +140,7 @@ def validate(data):
             require(m['role'] in ('user', 'assistant'), '只允许用户正文和助手最终回复')
             date(m['date'])
             sources[(t['id'], m['id'])] = m
+        latest_date_matches(t, t['messages'], '对话')
     for item in items.values():
         text_fields(item, ('title', 'summary', 'description', 'status', 'date'), '事项')
         date(item['date'])
@@ -147,6 +158,7 @@ def validate(data):
             for ctx in node.get('context', []):
                 original = sources.get((node['thread'], ctx['id']))
                 require(original is not None and all(ctx.get(k) == original.get(k) for k in ('text', 'role', 'date')), '上下文不一致')
+        latest_date_matches(item, item['nodes'], '事项')
         for dec in item['decisions']:
             require(dec['node'] in nodes, '决定引用不存在')
             text_fields(dec, ('text', 'label', 'date'), '决定')
