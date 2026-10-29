@@ -12,6 +12,7 @@ description: 初始化或更新本地 Codex 对话整理工作台，按事情汇
 - 首次使用或新建工作台：读 [首次使用](references/first-use.md)。先取得时间范围，再读取正文，不默认全量历史。按 [历史收录与完成检查](references/history-collection.md) 建立清单并持续分批处理；首批上线不是初始化完成。
 - 已有工作台、手动更新或补录历史：读 [更新流程](references/update.md)。沿用保存位置、分类与稳定 ID，不重新初始化。
 - 设置、修改或暂停定时更新：读 [定时更新](references/scheduling.md)。只在用户授权且时间明确时设置。
+- 已有工作台找不到、重启后打不开、升级 Skill：读 [打开与维护](references/maintenance.md)，不重新初始化。
 - 发布失败、恢复上次数据：按更新流程中的恢复部分执行；不要从零覆盖重建。
 
 每次整理正文前读 [整理标准](references/curation.md)；构建批次时读 [数据契约](references/data-contract.md)。脚本只做结构与引用检查，不能替代对内容含义的判断。

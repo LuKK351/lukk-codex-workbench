@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import shutil
 import sys
-from workbench import load_timezone, configure_console
+from workbench import load_timezone, configure_console, atomic, encode
 
 
 def initialize(destination, since, until, timezone, port=8770):
@@ -27,6 +27,14 @@ def initialize(destination, since, until, timezone, port=8770):
     data['snapshot'] = dt.datetime.now(zone).date().isoformat()
     data['scopeDescription'] = f'尚未收录。首次计划范围：{since}—{until}（{timezone}）。'
     (destination / 'data.json').write_text(json.dumps(data, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
+    progress = {'version': 1,
+                'range': {'start': since, 'end': until, 'timezone': timezone},
+                'status': 'in_progress',
+                'discovery': {'status': 'in_progress', 'method': '', 'cursor': None,
+                              'evidence': '', 'limitations': []},
+                'threads': {}, 'updatedAt': settings['createdAt'],
+                'nextAction': '发现授权范围内的候选窗口，登记清单并逐批读取、整理、发布。'}
+    atomic(destination / '.workbench/history-collection.json', encode(progress))
     return settings
 
 

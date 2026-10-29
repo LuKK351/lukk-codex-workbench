@@ -17,6 +17,12 @@ def main():
     with tempfile.TemporaryDirectory(prefix='workbench-test-') as tmp:
         root = Path(tmp) / '中文 空格 工作台'
         initialize(root, '2026-01-01', '2026-01-02', 'Asia/Shanghai')
+        progress_path = root / '.workbench/history-collection.json'
+        progress = w.read(progress_path)
+        assert progress['range'] == {'start':'2026-01-01','end':'2026-01-02','timezone':'Asia/Shanghai'}
+        assert progress['status'] == progress['discovery']['status'] == 'in_progress'
+        assert progress['threads'] == {} and progress['nextAction']
+        original_progress = progress_path.read_bytes()
         original = (root / 'data.json').read_bytes()
         try:
             initialize(root, '2026-01-01', '2026-01-02', 'Asia/Shanghai')
@@ -24,6 +30,7 @@ def main():
         except ValueError:
             pass
         assert (root / 'data.json').read_bytes() == original
+        assert progress_path.read_bytes() == original_progress
         stamp = '2026-01-02T10:00:00+08:00'
         thread = {'id':'11111111-1111-4111-8111-111111111111','title':'测试对话','date':stamp,
                   'messages':[{'id':'m1','role':'user','text':'索引已完成，同步先不做。','date':stamp}]}
@@ -68,7 +75,7 @@ def main():
             url=server.stdout.readline().strip().rstrip('/')
             assert url.startswith('http://127.0.0.1:')
             with urlopen(url+'/data.json',timeout=5) as response: assert json.load(response)['threads']==[]
-            for private in ('config/workbench.json','scripts/serve.py'):
+            for private in ('config/workbench.json','scripts/serve.py','.workbench/history-collection.json','.workbench/backups/'):
                 try: urlopen(url+'/'+private,timeout=5)
                 except HTTPError as exc: assert exc.code==404
                 else: raise AssertionError('Private file exposed')
