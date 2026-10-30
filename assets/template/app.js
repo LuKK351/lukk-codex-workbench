@@ -33,17 +33,47 @@ const stamp=d=>`<time title="${esc(C.date(d))}">${esc(C.relative(d))}<span> · $
 function highlight(text,terms){const value=String(text||''),lower=value.toLowerCase(),ranges=[];for(const w of terms){let start=0,i;while((i=lower.indexOf(w,start))>=0){ranges.push([i,i+w.length]);start=i+w.length;}}ranges.sort((a,b)=>a[0]-b[0]);const merged=[];for(const r of ranges){const last=merged.at(-1);if(last&&r[0]<=last[1])last[1]=Math.max(last[1],r[1]);else merged.push(r);}let result='',at=0;for(const [a,b] of merged){result+=esc(value.slice(at,a))+'<mark>'+esc(value.slice(a,b))+'</mark>';at=b;}return result+esc(value.slice(at));}
 function readable(text){
  const raw=String(text||'');let formatted=false;
- const body=raw.split(/```[^\n]*\n([\s\S]*?)```/g).map((chunk,i)=>{
-  if(i%2)return '<pre><code>'+esc(chunk)+'</code></pre>';
+ function inline(value){
   const tokens=[];
+  const token=html=>{tokens.push(html);return '\u0000'+(tokens.length-1)+'\u0000';};
+  let chunk=value.replace(/(`+)([^\n]*?)\1/g,(_,ticks,code)=>token('<code>'+esc(code)+'</code>'));
   chunk=chunk.replace(/(!?)\[([^\]\n]*)\]\((?:<([^>\n]+)>|([^\s)]+))\)/g,(_,image,label,angle,url)=>{
    formatted=true;const target=angle||url,caption=label||(image?'未命名图片':'链接');
    const safe=/^https?:\/\//i.test(target);
-   const html=image?'<span class="attachment-note">图片 · '+esc(caption)+' <small>未载入附件</small></span>':safe?'<a class="message-link" href="'+esc(target)+'" target="_blank" rel="noopener noreferrer">'+esc(caption)+' ↗</a>':'<span class="attachment-note">文件 · '+esc(caption)+'</span>';
-   tokens.push(html);return '\u0000'+(tokens.length-1)+'\u0000';
+   return token(image?'<span class="attachment-note">图片 · '+esc(caption)+' <small>未载入附件</small></span>':safe?'<a class="message-link" href="'+esc(target)+'" target="_blank" rel="noopener noreferrer">'+esc(caption)+' ↗</a>':'<span class="attachment-note">文件 · '+esc(caption)+'</span>');
   });
-  return esc(chunk).replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>').replace(/`([^`\n]+)`/g,'<code>$1</code>').replace(/^#{1,6} (.+)$/gm,'<strong class="message-heading">$1</strong>').replace(/\u0000(\d+)\u0000/g,(_,n)=>tokens[Number(n)]);
- }).join('');
+  return esc(chunk).replace(/\*\*([^*\n]+)\*\*/g,'<strong>$1</strong>').replace(/^#{1,6} (.+)$/gm,'<strong class="message-heading">$1</strong>').replace(/\u0000(\d+)\u0000/g,(_,n)=>tokens[Number(n)]||'');
+ }
+ function cells(line){
+  const parts=[];let cell='',codeTicks=0,separators=0;
+  const s=line.trim();
+  for(let i=0;i<s.length;i++){
+   if(s[i]==='\\'&&s[i+1]==='|'){cell+='|';i++;continue;}
+   if(s[i]==='`'){let end=i+1;while(s[end]==='`')end++;const size=end-i;if(!codeTicks)codeTicks=size;else if(size===codeTicks)codeTicks=0;cell+=s.slice(i,end);i=end-1;continue;}
+   if(s[i]==='|'&&!codeTicks){parts.push(cell.trim());cell='';separators++;}else cell+=s[i];
+  }
+  parts.push(cell.trim());
+  if(!separators)return null;
+  if(s.startsWith('|'))parts.shift();
+  if(parts.at(-1)===''&&s.endsWith('|'))parts.pop();
+  return parts;
+ }
+ function blocks(chunk){
+  const lines=chunk.split('\n'),out=[];let plain=[];
+  const flush=()=>{if(plain.length){let value=plain.join('\n');if(out.at(-1)?.startsWith('<div class="message-table-scroll"'))value=value.replace(/^\n+/,'');out.push(inline(value));plain=[];}};
+  for(let i=0;i<lines.length;i++){
+   const header=cells(lines[i]),rule=i+1<lines.length?cells(lines[i+1]):null;
+   if(!header||!rule||header.length!==rule.length||!rule.every(c=>/^:?-{3,}:?$/.test(c))){plain.push(lines[i]);continue;}
+   while(plain.at(-1)==='')plain.pop();flush();formatted=true;
+   const align=rule.map(c=>c.startsWith(':')&&c.endsWith(':')?'center':c.endsWith(':')?'right':'left');
+   const row=(values,tag)=>'<tr>'+header.map((_,j)=>`<${tag}${tag==='th'?' scope="col"':''} class="align-${align[j]}">${inline(values[j]||'')}</${tag}>`).join('')+'</tr>';
+   const rows=[];i++;
+   while(i+1<lines.length){const values=cells(lines[i+1]);if(!values)break;rows.push(row(values,'td'));i++;}
+   out.push('<div class="message-table-scroll" tabindex="0" role="region" aria-label="原文表格，可横向滚动"><table class="message-table"><thead>'+row(header,'th')+'</thead><tbody>'+rows.join('')+'</tbody></table></div>');
+  }
+  flush();return out.join('');
+ }
+ const body=raw.split(/```[^\n]*\n([\s\S]*?)```/g).map((chunk,i)=>i%2?'<pre><code>'+esc(chunk)+'</code></pre>':blocks(chunk)).join('');
  return body+(formatted?'<details class="original-text"><summary>查看原始文本</summary><pre>'+esc(raw)+'</pre></details>':'');
 }
 function sourceLink(id,title,terms=[]){const label=terms.length?highlight(title,terms):esc(title);return /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id||'')?`<a class="source-shortcut" href="codex://threads/${encodeURIComponent(id)}" title="在 Codex 打开：${esc(title)}" aria-label="在 Codex 打开：${esc(title)}">${label} <span class="ui-arrow external" aria-hidden="true">↗</span></a>`:label;}
@@ -80,7 +110,7 @@ function tasks(s){
  const available=data.tasks.filter(t=>!dismissedTasks.has(t.id)&&C.inRange(t.date,s.range));
  const live=available.filter(t=>t.level==='有明确接续'||confirmedTasks.has(t.id)),uncertain=available.filter(t=>t.level!=='有明确接续'&&!confirmedTasks.has(t.id));
  const removed=data.tasks.filter(t=>dismissedTasks.has(t.id));
- return `${lastDismissedTask&&dismissedTasks.has(lastDismissedTask)?`<p class="list-note" role="status">已从此栏目移出，仍可在事情总览和搜索中找到。<button class="textbtn" data-task-visibility="restore" data-task-id="${esc(lastDismissedTask)}">撤销</button></p>`:''}<div class="sectionhead"><h2>接续事项</h2><span class="muted">${live.length} 件</span></div><p class="view-description">依据已收录的讨论整理，可能尚未包含其他窗口或线下的后续进展。</p>${live.length?live.map(t=>taskCard(t,s)).join(''):empty('当前时间范围内，没有显示的接续事项',s.range&&s.range!=='any'?'可切换到全部时间查看其他接续事项。':uncertain.length?'可在下方“进展待确认”中处理候选事项。':'已收录的讨论仍保留在事情总览中。',s.range&&s.range!=='any'?{href:link({...s,range:'any'}),label:'查看全部接续事项 →'}:uncertain.length?null:undefined)}${uncertain.length?`<details class="uncertain-group"><summary>进展待确认 <span>${uncertain.length}</span></summary><p class="muted">对话中尚未明确是否继续，可移入接续事项或不再显示。</p>${uncertain.map(t=>taskCard(t,s)).join('')}</details>`:''}${removed.length?`<details class="uncertain-group"><summary>已移出 · ${removed.length} 件</summary><p class="muted">移出记录保存在当前浏览器，清除本站数据后会丢失。此处显示所有时间范围内的已移出事项。</p>${removed.map(t=>taskCard(t,s,true)).join('')}</details>`:''}`;
+ return `${lastDismissedTask&&dismissedTasks.has(lastDismissedTask)?`<p class="list-note" role="status">已从此栏目移出，仍可在事情总览和搜索中找到。<button class="textbtn" data-task-visibility="restore" data-task-id="${esc(lastDismissedTask)}">撤销</button></p>`:''}<div class="sectionhead"><h2>接续事项</h2><span class="muted">${live.length} 件</span></div><p class="view-description">依据已收录的讨论整理，可能尚未包含其他窗口或线下的后续进展。</p>${live.length?live.map(t=>taskCard(t,s)).join(''):empty('当前时间范围内，没有显示的接续事项',s.range&&s.range!=='any'?'可切换到全部时间查看其他接续事项。':uncertain.length?'可在下方“进展待确认”中处理候选事项。':'已收录的讨论仍保留在事情总览中。',s.range&&s.range!=='any'?{href:link({...s,range:'any'}),label:'查看全部接续事项 →'}:uncertain.length?null:undefined)}${uncertain.length?`<details class="uncertain-group" open><summary>进展待确认 <span>${uncertain.length}</span></summary><p class="muted">对话中尚未明确是否继续，可移入接续事项或不再显示。</p>${uncertain.map(t=>taskCard(t,s)).join('')}</details>`:''}${removed.length?`<details class="uncertain-group"><summary>已移出 · ${removed.length} 件</summary><p class="muted">移出记录保存在当前浏览器，清除本站数据后会丢失。此处显示所有时间范围内的已移出事项。</p>${removed.map(t=>taskCard(t,s,true)).join('')}</details>`:''}`;
 }
 function timeline(s){const days=C.dailyGroups(data.items,s.range);return days.length?days.map(({day,things})=>`<section class="day-group" id="day-${day}"><div class="day-heading"><h2>${esc(C.date(day))}</h2><span>${esc(C.relative(day))} · ${things.length} 件事</span></div><div class="day-events">${things.map(({thing:t,nodes})=>{const latest=nodes.at(-1);const summary=data.dailySummaries?.[day+'|'+t.id]||(nodes.length===1?C.eventSummary(latest)||latest.title:[...new Set(nodes.map(n=>n.title))].slice(0,2).join(' · ')+(nodes.length>2?' 等 '+nodes.length+' 段讨论':''));const extra={from:'time',range:s.range,returnTo:link({...s,day})};return `<article class="event"><div class="row-top"><h3><a href="${href(t,latest,extra)}">${esc(t.title)}</a></h3>${fav(t,true)}</div><p class="event-summary">${esc(summary)}</p><div class="source-line"><span>当天来源 · ${sourceCount({nodes})}</span>${sourceNames({nodes})}</div>${nodes.some(n=>n.timePrecision?.includes("消息时间缺失"))?'<p class="muted">消息日期未知，暂按窗口创建日归组。</p>':''}<details class="day-discussions"><summary>展开当天 ${nodes.length} 段讨论</summary>${nodes.map(n=>`<a class="day-discussion" href="${href(t,n,extra)}"><time>${n.timePrecision?.includes("消息时间缺失")?"时间未知":esc(C.clock(n.date))}</time><div><strong>${esc(n.title)}</strong>${C.eventSummary(n)?`<p>${esc(C.eventSummary(n))}</p>`:""}${new Set(nodes.map(x=>x.thread)).size>1?`<small>来源对话：${esc(n.sourceTitle)}</small>`:''}</div><span>→</span></a>`).join('')}</details></article>`;}).join('')}</div></section>`).join(''):empty('这个范围暂未收录讨论','没有记录不代表没有聊过，可以切换到全部时间。',{href:link({...s,range:'any',day:undefined}),label:'查看全部日期 →'});}
 function home(s){if(!data.threads.length){app.innerHTML=`<section class="hero compact"><h1>Codex 对话整理工作台</h1><p class="muted">按事情找回讨论，按日期回看变化。</p></section>${empty('还没有收录对话','请在 Codex 中使用“对话整理工作台” Skill，选择时间范围并完成首次整理。',null)}${scopeNote()}`;return;}let tab=s.tab||'all';if(['recent','paused'].includes(tab))tab='all';s={...s,tab};const titles={tasks:['可以接着做','从已收录对话中整理可能尚未结束的事情、进行中的项目，以及可能继续推进或讨论的内容。'],all:['事情总览','一件事一张卡，汇总历次讨论、当前进展与全部来源。'],time:['每日回顾','按日期看当天聊了什么、有哪些变化。同一件事可在不同日期出现，只列当天涉及的来源。'],favorites:['收藏','临时收藏的事情，方便再次回看。']};const title=titles[tab]||titles.all;const rows=(tab==='favorites'?allThings():s.collection==='previous'?(data.legacyItems||[]):data.items).filter(t=>C.inRange(t.date,s.range)&&(!s.type||t.type===s.type)&&(tab!=='favorites'||favorites.has(t.id))).sort((a,b)=>b.date.localeCompare(a.date));const content=tab==='tasks'?tasks(s):tab==='time'?timeline(s):rows.length?`<div class="sectionhead"><h2>${tab==='favorites'?'我的收藏':s.collection==='previous'?'此前样本':'全部事情'}</h2><span class="muted">${rows.length} 件 · 按已收录的最近讨论排序</span></div>${rows.map(t=>row(t,s)).join('')}`:empty(tab==='favorites'?(favorites.size?'当前筛选下没有收藏的事情':'这里还没有收藏的事情'):'当前筛选下没有事情',tab==='favorites'?(favorites.size?'收藏仍然保留，可以清除筛选后查看。':'点击事情旁的 ☆ 即可收藏。'):'可清除类型与时间筛选，重新查看。',tab==='favorites'?(favorites.size?{href:link({tab:'favorites',range:'any'}),label:'查看全部收藏 →'}:undefined):{href:link({tab:'all',range:'any'}),label:'清除筛选 →'});app.innerHTML=`<section class="hero compact"><div><h1>${title[0]}</h1><p class="muted">${title[1]}</p></div></section>${searchForm()}${tabs(tab)}${s.collection==='previous'?`<p class="sample-notice">以下是旧版局部样本，未在本轮重整，状态可能已变化；保留供找回与收藏。<a href="#tab=all" class="textlink">返回本轮 ${data.items.length} 件事 <span class="ui-arrow" aria-hidden="true">→</span></a></p>`:""}${tab==='favorites'&&!favorites.size?'':filters(s)}${tab==='all'||(tab==='favorites'&&favorites.size)?typeFilters(s):''}${tab==='all'?'<p class="list-note">跨日期、跨窗口合并整理 · 来源对话保留原标题</p>':''}${tab==='favorites'?'<p class="storage-note">收藏保存在当前浏览器，关闭浏览器或重启电脑通常不会丢失。清除本站数据、删除浏览器用户配置或结束无痕会话后会丢失，换浏览器或访问地址不会同步。</p>':''}${content}${scopeNote()}`;}

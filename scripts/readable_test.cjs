@@ -1,0 +1,33 @@
+'use strict';
+// Exercise the actual renderer without a DOM or private conversation data.
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const path=require('node:path');
+const source=fs.readFileSync(path.join(__dirname,'../assets/template/app.js'),'utf8');
+const sandbox={};
+vm.createContext(sandbox);
+vm.runInContext(source.slice(source.indexOf('const esc='),source.indexOf('const state='))+source.slice(source.indexOf('function readable('),source.indexOf('function sourceLink(')),sandbox);
+const render=text=>sandbox.readable(text);
+const table='| 顺序 | 访客看到的内容 | 发现 |\n| --- | :---: | ---: |\n| 1 | **体验** | 有限时间 |\n| 2 | 交会 | 具体的人 |';
+let html=render('前文\n\n'+table+'\n\n后文');
+assert.equal((html.match(/<table /g)||[]).length,1);
+assert.equal((html.match(/<th scope=/g)||[]).length,3);
+assert.equal((html.match(/<td class=/g)||[]).length,6);
+assert.match(html,/<strong>体验<\/strong>/);
+assert.match(html,/class="align-center"/);assert.match(html,/class="align-right"/);
+assert.ok(html.indexOf('前文')<html.indexOf('<table'));assert.ok(html.indexOf('后文')>html.indexOf('</table>'));
+assert.ok(html.includes(table)); // Raw source remains available for verification/copying.
+html=render('A | B\n--- | ---\n`a|b` | x\\|y');
+assert.equal((html.match(/<td class=/g)||[]).length,2);
+assert.match(html,/<code>a\|b<\/code>/);assert.match(html,/>x\|y<\/td>/);
+assert.ok(!render('```markdown\n'+table+'\n```').includes('<table'));
+assert.ok(!render('a | b\nnot | a separator').includes('<table'));
+assert.ok(!render('a | b\n--- | --- | ---').includes('<table'));
+html=render('| A | B |\n| --- | --- |\n| <img src=x onerror=alert(1)> | [坏链接](javascript:alert) |');
+assert.ok(!html.includes('<img'));assert.ok(!html.includes('href="javascript:'));
+assert.match(html,/&lt;img/);
+assert.match(render('| A | B |\n| --- | --- |\n| [来源](https://example.com) | `**literal**` |'),/<a class="message-link"/);
+assert.match(render('`**literal**`'),/<code>\*\*literal\*\*<\/code>/);
+assert.equal((render(table+'\n\n'+table).match(/<table /g)||[]).length,2);
+console.log('PASS Markdown table rows, inline formatting, alignment, escaped/code pipes, fenced code, malformed input, source preservation and HTML/URL safety');
