@@ -54,7 +54,7 @@ macOS 使用当前用户的 LaunchAgent，Windows 使用当前用户 Startup 文
 
 ### 升级已有工作台
 
-先保留原 URL、端口、浏览器选择和所有数据。将当前 Skill 的 `scripts/launcher.py`、`scripts/serve.py` 与工作台运行脚本比较；备份需替换文件，存在用户改动则核对差异后再同步。不要复制空模板覆盖数据。`desktop.py install` 会为旧配置补上唯一身份并保留其他配置；初始化器已为新工作台生成身份。
+先保留原 URL、端口、浏览器选择和所有数据。将当前 Skill 的 `scripts/launcher.py`、`scripts/serve.py`、`scripts/open-workbench.ps1` 与工作台运行脚本比较；备份需替换文件，存在用户改动则核对差异后再同步。不要复制空模板覆盖数据。`desktop.py install` 会为旧配置补上唯一身份并保留其他配置；初始化器已为新工作台生成身份。
 
 若原地址有旧版服务但没有健康检查接口，launcher 会报告占用。先核对其 data.json 与目标目录一致，再检查实际进程命令确实指向该工作台的旧 serve.py，才能停止该已确认进程并用新 launcher 恢复。不能根据端口或过期 PID 文件盲目杀进程。若无法核实，保留服务、说明阻碍，不静默换端口。
 

@@ -179,8 +179,8 @@ class LauncherTests(unittest.TestCase):
         config = dict(self.config, pythonExecutable=str(fakepython))
         code = desktop.bootstrap_windows(self.root, config, quiet=True)
         self.assertIn("''", code)
-        self.assertIn('--ensure-only', code)
-        self.assertIn('Test-Path -LiteralPath', code)
+        self.assertIn('-Quiet', code)
+        self.assertIn('open-workbench.ps1', code)
         self.assertIn('MessageBox', code)
         args = desktop.powershell_args(code)
         self.assertEqual(base64.b64decode(args[-1]).decode('utf-16le'), code)
@@ -193,8 +193,8 @@ class LauncherTests(unittest.TestCase):
     def test_windows_shortcut_roundtrip_and_native_launch(self):
         installed = desktop.install(self.root, self.base / '桌面')
         entry = Path(installed['entry'])
-        output = desktop.powershell("[Console]::OutputEncoding=[Text.UTF8Encoding]::new(); $s=(New-Object -ComObject WScript.Shell).CreateShortcut(" + desktop.ps_literal(entry) + "); @{target=$s.TargetPath; args=$s.Arguments} | ConvertTo-Json -Compress")
-        shortcut = json.loads(output)
+        from windows_shortcut import read
+        shortcut = read(entry)
         self.assertTrue(shortcut['target'].lower().endswith('powershell.exe'))
         # Quiet variant uses the same bootstrap without opening a real browser.
         quiet = self.base / '登录入口.lnk'
@@ -210,9 +210,15 @@ class LauncherTests(unittest.TestCase):
         desktop.uninstall(self.root)
         self.assertFalse(entry.exists())
 
+    def test_loopback_service_does_not_depend_on_reverse_dns(self):
+        from serve import LoopbackServer, Handler
+        with patch('socket.getfqdn', side_effect=AssertionError('Unexpected DNS lookup')):
+            server = LoopbackServer(('127.0.0.1', 0), Handler)
+            server.server_close()
+
     def test_runtime_copies_are_current(self):
         scripts = Path(__file__).resolve().parent
-        for name in ('launcher.py', 'serve.py'):
+        for name in ('launcher.py', 'serve.py', 'open-workbench.ps1'):
             self.assertEqual((scripts / name).read_bytes(), (self.root / 'scripts' / name).read_bytes())
 
 

@@ -11,6 +11,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import uuid
 from workbench import atomic, encode, configure_console
 from launcher import settings, ensure
@@ -28,12 +29,17 @@ def powershell_args(code):
 
 
 def powershell(code):
-    result = subprocess.run(['powershell.exe', *powershell_args("$ErrorActionPreference='Stop';\n" + code)],
-                            capture_output=True, timeout=30)
+    # A local UTF-8 script avoids nested encoded command limits and preserves
+    # Chinese paths on Windows PowerShell 5.1 without changing machine policy.
+    with tempfile.TemporaryDirectory(prefix='workbench-shell-') as tmp:
+        script = Path(tmp) / 'entry.ps1'
+        script.write_text("$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new();\n" + code, encoding='utf-8-sig')
+        result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', str(script)],
+                                capture_output=True, timeout=30,
+                                **({'creationflags': 0x08000000} if sys.platform == 'win32' else {}))
     if result.returncode:
         detail = result.stderr.decode('utf-8', errors='replace')[-4000:]
         raise ValueError('Windows 入口操作失败：' + detail)
-    # Explicit UTF-8 console output avoids the user's legacy console code page.
     return result.stdout.decode('utf-8-sig').strip()
 
 
@@ -88,29 +94,24 @@ def bootstrap_windows(root, config, quiet=False):
     python = Path(config['pythonExecutable']).with_name('pythonw.exe')
     if not python.is_file():
         raise ValueError('当前 Python 缺少 pythonw.exe，无法创建无终端窗口的入口；请让 Codex 修复 Python 环境。')
-    args = [str(root / 'scripts/launcher.py'), str(root), '--gui']
-    if quiet:
-        args.append('--ensure-only')
-    checks = [str(python), str(root / 'scripts/launcher.py'), str(root / 'config/workbench.json')]
-    array = ','.join(ps_literal(v) for v in checks)
-    message = '工作台文件或原运行环境已找不到。请让 Codex 修复已有工作台的打开入口，不要重新初始化。'
-    return ("$ErrorActionPreference='Stop'; try {\n"
-            f"foreach ($p in @({array})) {{ if (!(Test-Path -LiteralPath $p)) {{ throw {ps_literal(message)} }} }}\n"
-            f"& {ps_literal(python)} " + ' '.join(ps_literal(a) for a in args) + "\n} catch {\n"
-            "Add-Type -AssemblyName System.Windows.Forms; "
-            "[System.Windows.Forms.MessageBox]::Show($_.Exception.Message, 'Codex 工作台暂时无法打开') | Out-Null\n}")
+    script = root / 'scripts/open-workbench.ps1'
+    if not script.is_file():
+        raise ValueError('缺少 Windows 入口脚本，请让 Codex 升级已有工作台运行脚本。')
+    # Keep the shortcut's command short, with a native fallback even when the
+    # workbench folder has been moved or removed.
+    return ("$ErrorActionPreference='Stop'; try { & " + ps_literal(script) +
+            (' -Quiet' if quiet else '') + " } catch { Add-Type -AssemblyName System.Windows.Forms; "
+            "[System.Windows.Forms.MessageBox]::Show('请让 Codex 修复已有工作台的打开入口，不要重新初始化。', 'Codex 工作台') | Out-Null }")
 
 
 def shortcut(path, root, config, quiet=False):
     code = bootstrap_windows(root, config, quiet)
-    args = subprocess.list2cmdline(powershell_args(code))
-    # Resolve redirected Desktop/Startup through Windows, never assume ~/Desktop.
-    powershell("$s=(New-Object -ComObject WScript.Shell).CreateShortcut(" + ps_literal(path) + ");\n"
-               "$s.TargetPath=(Get-Command powershell.exe).Source;\n"
-               "$s.Arguments=" + ps_literal(args) + ";\n"
-               "$s.WorkingDirectory=" + ps_literal(root) + ";\n"
-               "$s.Description='打开 Codex 对话整理工作台'; $s.WindowStyle=7; $s.Save();\n"
-               "if (!(Test-Path -LiteralPath " + ps_literal(path) + ")) { throw '快捷方式创建失败' }")
+    args = subprocess.list2cmdline(['-ExecutionPolicy', 'Bypass', *powershell_args(code)])
+    from windows_shortcut import create
+    target = shutil.which('powershell.exe')
+    if not target:
+        raise ValueError('系统中未找到 Windows PowerShell。')
+    create(path, target, args, root)
 
 
 def mac_app(path, root, config):

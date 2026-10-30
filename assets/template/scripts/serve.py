@@ -3,10 +3,20 @@
 import argparse
 import json
 import os
+import socketserver
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
+
+
+class LoopbackServer(ThreadingHTTPServer):
+    def server_bind(self):
+        # This server has a fixed loopback name; reverse DNS adds no value and
+        # can block startup on machines without a working local resolver.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name = 'localhost'
+        self.server_port = self.server_address[1]
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -42,6 +52,6 @@ if __name__ == '__main__':
     args = p.parse_args()
     root = Path(args.root).resolve()
     if not (root / 'data.json').is_file(): p.error('目录中缺少 data.json')
-    server = ThreadingHTTPServer(('127.0.0.1', args.port), partial(Handler, directory=str(root)))
+    server = LoopbackServer(('127.0.0.1', args.port), partial(Handler, directory=str(root)))
     print(f'http://127.0.0.1:{server.server_address[1]}/', flush=True)
     server.serve_forever()
