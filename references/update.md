@@ -4,7 +4,7 @@
 
 读取 `config/workbench.json`（如存在）、`config/default-types.json`、`config/item-types.json` 和正式 `data.json`。没有初始化配置的旧工作台可以继续更新已有来源；补上时区、稳定 URL 和已知收录范围，不猜最初授权，不重新初始化。历史 `build_*.py` 只用于重放旧样本，不是实时更新入口。
 
-脚本是工作台目录中的 `scripts/workbench.py`，需要 Python 3.9+ 与可用的 IANA 时区数据；Windows 使用 msvcrt 字节锁，macOS/Linux 使用 fcntl。优先使用 config/workbench.json 中的 pythonExecutable，否则检测本机解释器；将下方 python3 替换为该解释器。Windows 适配已实现，当前尚无 Windows 实机验证；自检入口见 first-use.md。脚本不调用模型或 Codex，不自动抓取对话；你负责读取、理解和构造有证据的批次。
+脚本是工作台目录中的 `scripts/workbench.py`，需要 Python 3.9+ 与可用的 IANA 时区数据；Windows 使用 msvcrt 字节锁，macOS/Linux 使用 fcntl。优先使用 config/workbench.json 中的 pythonExecutable，否则检测本机解释器；将下方 python3 替换为该解释器。macOS、Windows 与 Linux 的隔离测试均已通过；用户环境仍需核对，自检入口见 first-use.md。脚本不调用模型或 Codex，不自动抓取对话；你负责读取、理解和构造有证据的批次。
 
 先读取 `.workbench/history-collection.json`。若首次历史尚未完成，按 [历史收录与完成检查](history-collection.md) 继续待处理清单；“更新”同时补齐原授权历史和新增内容，不只处理今天。用户明确只要新增时按其要求执行，并保留历史缺口。旧工作台没有清单时，从配置、已发布批次与来源证据重建，不能把已有数据的最早日期当成覆盖起点。
 

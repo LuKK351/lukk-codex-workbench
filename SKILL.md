@@ -29,7 +29,7 @@ description: 初始化或更新本地 Codex 对话整理工作台，按事情汇
 
 ## 运行环境
 
-Python 3.9+；已适配 Windows、macOS 与 Linux 的发布锁。首次使用检查时区依赖、解释器和路径，详见 first-use.md。当前验证包含 macOS 实测和 Windows API 分支模拟，尚不宣称 Windows 实机验收通过。
+Python 3.9+；已适配 Windows、macOS 与 Linux 的发布锁。首次使用检查时区依赖、解释器和路径，详见 first-use.md。已通过 macOS 本机及 macOS/Windows/Linux CI 隔离测试；Windows CI 包含真实快捷方式调用，尚未验证各系统整机重启与所有桌面策略。
 
 ## 发布后的执行循环与交付
 
