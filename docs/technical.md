@@ -81,3 +81,10 @@ GitHub Actions 对 macOS、Windows、Linux 运行隔离测试，[2026-10-30 三�
 系统接口依据：[Windows 快捷方式](https://learn.microsoft.com/en-us/windows/win32/shell/links)、[Windows 启动应用](https://support.microsoft.com/en-us/windows/experience/startup-boot/configure-startup-applications-in-windows)、macOS 本机 `man launchd.plist`（RunAtLoad、AbandonProcessGroup）。
 
 最近整理显示 `organizedAt`（生成这一版整理内容的具体时间）；本轮读取截止显示 `collectionCutoff`。二者均按工作台时区展示，启动/刷新网页不会更新时间。旧版没有具体时间时明确显示未记录，不补造零点；实际覆盖及缺口仍以收录范围为准。
+
+
+## 界面与动效
+
+绿色界面使用 C 方向的连续线图形，页头仅显示「Codex 对话整理工作台」。图形随样式内嵌，不依赖外部图片服务。页面包含轻量入场、标签切换、卡片与按钮反馈；顶部线条仅在进入时播放一次，收藏等状态操作不会重复触发页面入场。遵循系统“减少动态效果”设置，页面转入后台时停止动画。
+
+视觉升级仅替换 `index.html`、`style.css`、`app.js`；保留原有地址、`data.json`、配置和浏览器存储。README 图片来自同一界面，示例文字经过脱敏替换。

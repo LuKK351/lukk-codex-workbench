@@ -105,7 +105,7 @@ function search(s){
  app.innerHTML=`<div class="breadcrumbs"><a href="${esc(searchBack)}">← ${esc(backLabel(searchBack))}</a><span>/ 搜索结果</span></div><h1>搜索结果</h1>${searchForm(q)}${filters({...s,range:timeSelection})}<p class="search-summary">${current.length} 件相关事情${found.suggestions.length?' · '+found.suggestions.length+' 件相近候选':''}${mentioned.length?' · '+mentioned.length+' 件仅原话提及':''}${old.length?' · '+old.length+' 件旧样本':''} · ${found.rawCount} 条全文匹配${found.approxRawCount?' · '+found.approxRawCount+' 条相近原文':''}</p><p class="muted search-explainer">搜索全部已收录讨论；相近候选保留原文供核对。</p>${cards(current)}${found.suggestions.length?`<details class="older-search" ${!current.length?'open':''}><summary>可能是你要找的 · ${found.suggestions.length} 件</summary><p class="muted">根据相近说法、少量错字或部分关键词匹配的候选事情。</p>${cards(found.suggestions)}</details>`:''}${mentioned.length?`<details class="older-search" ${!current.length?'open':''}><summary>仅在原话中提及 · ${mentioned.length} 件</summary><p class="muted">这些讨论出现了关键词，不一定以它为主题。</p>${cards(mentioned)}</details>`:''}${old.length?`<details class="older-search"><summary>旧样本中的匹配 · ${old.length} 件</summary>${cards(old)}</details>`:''}${sources?`<details class="raw-results" ${!found.groups.length?'open':''}><summary>来源对话与其他全文匹配 · ${found.sources.length} 个对话</summary><p class="muted">保留窗口名、全文和整句线索命中；相近原文单独标明，上方已展示的原话不重复列出。</p>${sources}</details>`:''}${!found.groups.length&&!found.suggestions.length&&!sources?empty('没有找到匹配的内容',found.timeRange?'可切换到“全部时间”，或换一个关键词再找。没有命中不代表从未聊过。':'可以换一个具体词，例如“表盘”“重连”。没有命中不代表从未聊过。'):''}`;
 }
 function detail(s){const t=getThing(s.item);if(!t){app.innerHTML=empty('这件事暂未收录','可以返回事情总览。');return;}const work=t.workBranches||[],branch=work.includes(s.branch)?s.branch:'全部';const nodes=t.nodes.filter(n=>branch==='全部'||n.branch===branch);const n=nodes.find(n=>n.id===s.node)||nodes.at(-1);const extra={from:s.from,range:s.range,q:s.q,returnTo:s.returnTo};const back=localBack(s.returnTo,s.q?link({q:s.q}):link({tab:s.from||'all',range:s.range}));const names={tasks:'可以接着做',all:'事情总览',time:'每日回顾',favorites:'收藏'};const related=(t.related||[]).map(getThing).filter(Boolean);app.innerHTML=`<div class="breadcrumbs"><a href="${esc(back)}"><span class="ui-arrow back" aria-hidden="true">←</span> ${esc(backLabel(back))}</a><span>/ 讨论详情</span></div><div class="detailtitle"><h1>${esc(t.title)}</h1>${fav(t)}</div><div class="detail-time"><span class="status-pill">${esc(t.status||'此前样本')}</span>最后讨论 ${stamp(t.date)}</div>${t.collection==='previous'?'<p class="sample-notice">旧版样本，未在本轮重新核查。</p>':''}<p class="detail-recap">${esc(t.summary||t.recap)}</p>${background(t)}${work.length?`<nav class="worklines" aria-label="相关窗口分工"><a class="workline ${branch==='全部'?'active':''}" href="${href(t,null,{...extra,branch:'全部'})}"><strong>全部讨论</strong></a>${work.map(b=>{const latest=t.nodes.filter(n=>n.branch===b).at(-1);return `<a class="workline ${branch===b?'active':''}" href="${href(t,latest,{...extra,branch:b})}"><strong>${esc(b)}</strong><small>来源对话：${esc(latest.sourceTitle)}</small></a>`;}).join('')}</nav>`:''}${decisions(t,extra)}<div class="detailgrid"><aside class="timeline"><div class="timelinehead">讨论经过 · ${nodes.length} 段</div>${[...nodes].reverse().map(x=>`<a class="node ${x.id===n.id?'active':''}" ${x.id===n.id?'aria-current="true"':''} href="${href(t,x,{...extra,branch})}"><span class="date">${esc(C.date(x.date))}${work.length?' · '+esc(x.branch):''}</span><strong>${esc(x.title)}</strong></a>`).join('')}${related.length?`<div class="related">相关事情${related.map(r=>`<a class="related-link" href="${href(r,null,{returnTo:link(s)})}">${esc(r.title)} <span class="ui-arrow" aria-hidden="true">→</span></a>`).join('')}</div>`:''}</aside><section class="reader" id="selected-discussion" aria-label="讨论原文" tabindex="-1"><div class="readhead"><h2>${esc(n.title)}</h2><span class="muted">${esc(C.date(n.date))} · ${n.timePrecision?.includes("消息时间缺失")?"时间未知":esc(C.clock(n.date))}</span></div>${n.timePrecision?.includes("消息时间缺失")?'<p class="sample-notice">消息时间缺失，上方日期是窗口创建日期。</p>':''}${C.eventSummary(n)?`<p class="event-note"><span class="ai-label">小结</span>${esc(C.eventSummary(n))}</p>`:""}<span class="badge">${n.quoteRole==='assistant'?'Codex · 当时回复':'你的原话'}</span><div class="message-body quote">${readable(n.quote)}</div><div class="source-line"><span>来源对话</span><span>${esc(n.sourceTitle)}</span></div>${contextPanel(n)}<div class="actions">${data.threads?.some(x=>x.id===n.thread)?`<a href="${link({thread:n.thread,message:n.messageId,back:link({...s,node:n.id,branch})})}">查看收录原文 <span class="ui-arrow" aria-hidden="true">→</span></a>`:''}<a href="${link({tab:'time',range:C.dayKey(n.date),day:C.dayKey(n.date)})}">回看这一天</a></div><p class="source-note">可从列表的来源对话名尝试打开 Codex；这里保留已收录原文。</p></section></div>${scopeNote()}`;}
-function render(preserve=false){if(!data)return;rememberView();const s=state();if(s.thread)sourceReader(s);else if(s.sources)sourceIndex(s);else if(s.item)detail(s);else if(s.q)search(s);else home(s);renderedView=viewKey(location.hash);restoreView(preserve);document.title=(s.item?(getThing(s.item)?.title||'讨论详情')+' · ':s.thread?'对话原文 · ':s.sources?'已收录的对话 · ':s.q?'查找：'+s.q+' · ':'')+'Codex 对话整理工作台';if(preserve)return;if(viewPositions.has(location.hash)){window.scrollTo(0,viewPositions.get(location.hash));return;}if(s.message)document.getElementById('message-'+s.message)?.scrollIntoView({block:'center'});else if(s.node&&s.item)document.getElementById('selected-discussion')?.scrollIntoView({block:'start'});else if(s.day)document.getElementById('day-'+s.day)?.scrollIntoView({block:'start'});else window.scrollTo(0,0);}
+function renderWithoutMotion(preserve=false){if(!data)return;rememberView();const s=state();if(s.thread)sourceReader(s);else if(s.sources)sourceIndex(s);else if(s.item)detail(s);else if(s.q)search(s);else home(s);renderedView=viewKey(location.hash);restoreView(preserve);document.title=(s.item?(getThing(s.item)?.title||'讨论详情')+' · ':s.thread?'对话原文 · ':s.sources?'已收录的对话 · ':s.q?'查找：'+s.q+' · ':'')+'Codex 对话整理工作台';if(preserve)return;if(viewPositions.has(location.hash)){window.scrollTo(0,viewPositions.get(location.hash));return;}if(s.message)document.getElementById('message-'+s.message)?.scrollIntoView({block:'center'});else if(s.node&&s.item)document.getElementById('selected-discussion')?.scrollIntoView({block:'start'});else if(s.day)document.getElementById('day-'+s.day)?.scrollIntoView({block:'start'});else window.scrollTo(0,0);}
 function sourceIndex(s){const back=localBack(s.back,'#tab=all');app.innerHTML=`<div class="breadcrumbs"><a href="${esc(back)}"><span class="ui-arrow back" aria-hidden="true">←</span> ${esc(backLabel(back))}</a></div><h1>已收录的对话</h1><p class="muted">${data.threads.length} 个来源对话，按最近讨论排序，包含未被选入事情详情的消息。点击阅读已收录原文。</p>${[...data.threads].sort((a,b)=>b.date.localeCompare(a.date)).map(t=>`<a class="result source-index-card" href="${link({thread:t.id,back:link(s)})}"><h3>${esc(t.title)} <span class="ui-arrow" aria-hidden="true">→</span></h3><p>${t.messages.length} 条消息 · ${esc(C.date(t.messages[0].date))} 至 ${esc(C.date(t.messages.at(-1).date))}${t.messages.some(m=>m.timePrecision?.includes('消息时间缺失'))?' · 部分日期按窗口创建日归组':''}</p></a>`).join('')}`;}
 function sourceReader(s){const t=data.threads.find(t=>t.id===s.thread);if(!t){app.innerHTML=empty('这个窗口尚未收录','请返回对话目录查看已收录的窗口。',{href:link({sources:'1'}),label:'返回对话目录 →'});return;}const fallback=s.backItem?link({item:s.backItem,node:s.backNode}):s.q?link({q:s.q}):'#sources=1';const back=localBack(s.back,fallback);app.innerHTML=`<div class="breadcrumbs"><a href="${esc(back)}"><span class="ui-arrow back" aria-hidden="true">←</span> ${esc(backLabel(back))}</a></div><div class="card-label">来源对话</div><h1>${esc(t.title)}</h1><p class="sample-notice">${t.messages.length} 条消息 · 采集于 ${t.checked||data.checked}，未实时同步。${t.messages.some(m=>m.timePrecision?.includes("消息时间缺失"))?"消息时间缺失，暂显示窗口创建日期。":"时间为每轮对话的开始时间。"}附件内容未读取。${t.inheritedPrefix?"前 "+t.inheritedPrefix.messages+" 条继承自原窗口，全文保留，搜索不重复计数。":""}</p><div class="transcript">${t.messages.map(m=>`<article id="message-${esc(m.id)}" class="transcript-message ${s.message===m.id?'target':''}"><label>${m.role==='user'?'你的原话':'Codex 当时回复'} · ${esc(C.date(m.date))} ${m.timePrecision?.includes("消息时间缺失")?"消息时间未知":esc(C.clock(m.date))}</label><div class="message-body">${readable(m.text)}</div></article>`).join('')}</div>`;}
 function showAbout(){const total=data.threads.reduce((n,t)=>n+t.messages.length,0);document.querySelector('#scope-description').innerHTML=`<div class="coverage-stats"><div><strong>${data.threads.length}</strong><span>对话窗口</span></div><div><strong>${data.items.length}</strong><span>件事情</span></div></div><p class="coverage-updated">${data.threads.length?'最近整理：'+esc(C.dateTime(data.organizedAt||data.snapshot)):'尚未完成首次收录'}</p>${data.collectionCutoff?`<p>本轮读取截止：${esc(C.dateTime(data.collectionCutoff))}（${esc(C.timeZoneLabel())}）。此后的讨论需下次更新，实际覆盖见下方收录范围。</p>`:'<p>页面根据已保存的对话整理，尚未实时同步。</p>'}<section class="coverage-status"><h3>当前收录范围</h3><p>${esc(data.scopeDescription)}</p><p>当前不包含 ChatGPT 对话和附件内容。</p></section><details class="coverage-details"><summary>详细说明</summary><p>${total} 条消息 · ${data.items.reduce((v,t)=>v+t.nodes.length,0)} 段讨论 · ${data.items.reduce((v,t)=>v+t.decisions.length,0)} 条决定与变化。</p><p>分批采集于 ${esc(data.checked)}，每个来源对话标明采集日期。部分早期消息缺少时间，按窗口创建日归组并单独标明。</p><p>事情名称、小结和停点由 AI 根据对话整理，不代表源项目的实时进展。原话保留，可在详情中核对。</p></details><div class="dialog-actions"><a class="secondary" data-close-about href="${sourceDirectoryLink()}">查看已收录对话 <span class="ui-arrow" aria-hidden="true">→</span></a></div>`;document.querySelector('#about').showModal();}
@@ -128,3 +128,69 @@ app.addEventListener('focusout',e=>{const picker=e.target.closest('.month-picker
 document.querySelector('#about').addEventListener('click',e=>{if(e.target.closest('[data-close-about]')){viewPositions.set(location.hash,window.scrollY);document.querySelector('#about').close();}});
 window.addEventListener('hashchange',()=>render());
 fetch('data.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('data');return r.json();}).then(d=>{data=d;C.setTimeZone(d.timezone||'Asia/Shanghai');render();render.last=state().item;}).catch(error=>{console.error('Workbench load/render failed',error);app.innerHTML='<h1>页面暂时没有加载成功</h1><p>请通过本机服务打开，然后刷新重试。</p>';});
+
+// Only animate actual navigation. Favorite/status updates retain their position.
+const motionPreference=window.matchMedia('(prefers-reduced-motion: reduce)');
+let motionTabsObserver;
+function render(preserve=false){
+  if(!data)return;
+  const before=motionSnapshot();
+  const favoriteFocus=preserve?document.activeElement?.dataset.favorite:null;
+  renderWithoutMotion(preserve);
+  motionAfter(before,preserve);
+  if(favoriteFocus)app.querySelector(`[data-favorite="${CSS.escape(favoriteFocus)}"]`)?.focus({preventScroll:true});
+}
+function motionSnapshot(){
+  const tab=app.querySelector('.tab.active');
+  return {tab:tab?.getBoundingClientRect(),key:app.dataset.motionKey};
+}
+function motionAfter(before,preserve){
+  const s=state();
+  const key=s.item?'item:'+s.item:s.thread?'thread:'+s.thread:s.sources?'sources':s.q?'search':'home';
+  app.dataset.motionKey=key;
+  if(!s.q&&!s.item&&!s.thread&&!s.sources&&(s.tab||'tasks')==='tasks')app.querySelector('.empty')?.classList.add('empty-compact');
+  const nav=app.querySelector('.tabs'),active=nav?.querySelector('.tab.active');
+  motionTabsObserver?.disconnect();
+  if(active){
+    const bar=document.createElement('span');bar.className='tabs-indicator';bar.setAttribute('aria-hidden','true');
+    bar.style.left=active.offsetLeft+'px';bar.style.width=active.offsetWidth+'px';nav.append(bar);nav.classList.add('has-indicator');
+    motionTabsObserver=new ResizeObserver(()=>{bar.style.left=active.offsetLeft+'px';bar.style.width=active.offsetWidth+'px';});
+    motionTabsObserver.observe(nav);
+    if(before.tab&&!preserve&&!motionPreference.matches){
+      const rect=active.getBoundingClientRect();
+      bar.animate([{transform:`translateX(${before.tab.left-rect.left}px) scaleX(${before.tab.width/rect.width})`},{transform:'none'}],{duration:320,easing:'cubic-bezier(.22,1,.36,1)'});
+      bar.style.transformOrigin='left';
+    }
+  }
+  const hero=app.querySelector('.hero');
+  if(hero?.querySelector(':scope>div')){
+    hero.insertAdjacentHTML('beforeend',`<svg class="thread-art" viewBox="0 0 250 100" aria-hidden="true" focusable="false">
+      <path class="thread" pathLength="100" d="M0 13C90 13 110 50 170 50H244"/>
+      <path class="thread" pathLength="100" d="M0 50H244"/>
+      <path class="thread" pathLength="100" d="M0 87C90 87 110 50 170 50H244"/>
+      <path class="trace" pathLength="100" d="M0 13C90 13 110 50 170 50H244"/>
+      <path class="trace" pathLength="100" d="M0 50H244"/>
+      <path class="trace" pathLength="100" d="M0 87C90 87 110 50 170 50H244"/>
+      <circle class="junction" cx="180" cy="50" r="4"/><circle class="junction" cx="240" cy="50" r="4"/>
+    </svg>`);
+    // The illustration runs once on arrival, never while filtering or saving.
+    if(before.key||preserve)hero.querySelectorAll('.trace').forEach(el=>el.style.animation='none');
+  }
+  if(preserve||motionPreference.matches||document.hidden)return;
+  // Do not fade the search form, focused controls, or previously restored reading position.
+  const samePage=before.key===key;
+  const candidates=[...app.children].filter(el=>!el.matches('form,nav,.footnote,.filters,.time-filter,.storage-note,.list-note,.sample-notice'));
+  let i=0;
+  for(const el of candidates){
+    if(samePage&&!el.matches('.thing-row,.task-card,.day-group,.result,.empty,.detailgrid'))continue;
+    const r=el.getBoundingClientRect();
+    if(r.bottom<0||r.top>innerHeight||i>=5)continue;
+    el.animate([{opacity:.45,transform:'translateY(5px)'},{opacity:1,transform:'none'}],{duration:240,delay:i++*20,fill:'backwards',easing:'cubic-bezier(.22,1,.36,1)'});
+  }
+}
+motionPreference.addEventListener('change',()=>{
+  if(motionPreference.matches)document.getAnimations().forEach(a=>a.cancel());
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)document.getAnimations().forEach(a=>a.cancel());
+});
