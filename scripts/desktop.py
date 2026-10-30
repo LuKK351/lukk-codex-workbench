@@ -111,7 +111,8 @@ def shortcut(path, root, config, quiet=False):
     target = shutil.which('powershell.exe')
     if not target:
         raise ValueError('系统中未找到 Windows PowerShell。')
-    create(path, target, args, root)
+    # Do not hold the data directory as a Windows process current directory.
+    create(path, target, args, Path(target).parent)
 
 
 def mac_app(path, root, config):

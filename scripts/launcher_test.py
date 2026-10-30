@@ -60,7 +60,16 @@ class LauncherTests(unittest.TestCase):
         for pid in list(self.children):
             self.stop(pid)
         self.assertEqual((self.root / 'data.json').read_bytes(), self.before)
-        self.temp.cleanup()
+        deadline = time.monotonic() + 5
+        while True:
+            try:
+                self.temp.cleanup()
+                break
+            except (PermissionError, RecursionError):
+                # Windows ShellExecute may still be releasing an exited process.
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(.1)
 
     def test_starts_survives_parent_exit_reuses_and_recovers(self):
         first = subprocess.run([sys.executable, str(self.script), str(self.root), '--ensure-only'], capture_output=True, text=True, check=True)
@@ -207,6 +216,16 @@ class LauncherTests(unittest.TestCase):
             time.sleep(.1)
         else:
             self.fail('Windows shortcut did not start the workbench')
+        with patch.object(desktop, 'win_folder', return_value=self.base / '重定向启动目录'):
+            result = desktop.set_login(self.root, True)
+            login_entry = Path(result['path'])
+            self.assertTrue(login_entry.exists())
+            login_link = read(login_entry)
+            self.assertIn('-EncodedCommand', login_link['args'])
+            self.assertIn('-Quiet', base64.b64decode(login_link['args'].split()[-1]).decode('utf-16le'))
+            desktop.set_login(self.root, False)
+            self.assertFalse(login_entry.exists())
+        desktop.uninstall(self.root)
         desktop.uninstall(self.root)
         self.assertFalse(entry.exists())
 

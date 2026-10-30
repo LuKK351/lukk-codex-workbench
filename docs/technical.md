@@ -76,4 +76,4 @@ macOS 使用用户桌面 `.app` 与可选 `~/Library/LaunchAgents`；Windows 使
 
 GitHub Actions 对 macOS、Windows、Linux 运行隔离测试。CI 的通过记录只覆盖相应测试，不代表所有用户桌面策略、系统登录项设置或整机重启场景均已验证。
 
-系统接口依据：[Windows 快捷方式](https://learn.microsoft.com/en-us/troubleshoot/windows-client/admin-development/create-desktop-shortcut-with-wsh)、[Windows 启动应用](https://support.microsoft.com/en-us/windows/experience/startup-boot/configure-startup-applications-in-windows)、macOS 本机 `man launchd.plist`（RunAtLoad、AbandonProcessGroup）。
+系统接口依据：[Windows 快捷方式](https://learn.microsoft.com/en-us/windows/win32/shell/links)、[Windows 启动应用](https://support.microsoft.com/en-us/windows/experience/startup-boot/configure-startup-applications-in-windows)、macOS 本机 `man launchd.plist`（RunAtLoad、AbandonProcessGroup）。
