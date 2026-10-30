@@ -4,7 +4,7 @@
 
 读取 `config/workbench.json`（如存在）、`config/default-types.json`、`config/item-types.json` 和正式 `data.json`。没有初始化配置的旧工作台可以继续更新已有来源；补上时区、稳定 URL 和已知收录范围，不猜最初授权，不重新初始化。历史 `build_*.py` 只用于重放旧样本，不是实时更新入口。
 
-脚本是工作台目录中的 `scripts/workbench.py`，需要 Python 3.9+ 与可用的 IANA 时区数据；Windows 使用 msvcrt 字节锁，macOS/Linux 使用 fcntl。优先使用 config/workbench.json 中的 pythonExecutable，否则检测本机解释器；将下方 python3 替换为该解释器。macOS、Windows 与 Linux 的隔离测试均已通过；用户环境仍需核对，自检入口见 first-use.md。脚本不调用模型或 Codex，不自动抓取对话；你负责读取、理解和构造有证据的批次。
+数据维护命令（hash、prepare、validate、rollback）统一使用**当前安装 Skill** 的 `scripts/workbench.py`，常规发布使用同目录的 `release.py`；工作台内的脚本只负责本机阅读服务与打开入口，旧数据维护副本不作为更新入口。需要 Python 3.9+ 与可用的 IANA 时区数据；Windows 使用 msvcrt 字节锁，macOS/Linux 使用 fcntl。优先使用 config/workbench.json 中的 pythonExecutable，否则检测本机解释器；将下方 python3 替换为该解释器。macOS、Windows 与 Linux 的隔离测试均已通过；用户环境仍需核对，自检入口见 first-use.md。脚本不调用模型或 Codex，不自动抓取对话；你负责读取、理解和构造有证据的批次。
 
 先读取 `.workbench/history-collection.json`。若首次历史尚未完成，按 [历史收录与完成检查](history-collection.md) 继续待处理清单；“更新”同时补齐原授权历史和新增内容，不只处理今天。用户明确只要新增时按其要求执行，并保留历史缺口。旧工作台没有清单时，从配置、已发布批次与来源证据重建，不能把已有数据的最早日期当成覆盖起点。
 
@@ -38,7 +38,7 @@
 
 ```sh
 python3 <Skill>/scripts/workbench.py prepare . .workbench/runs/<批次>/batch.json .workbench/runs/<批次>/candidate
-python3 scripts/workbench.py validate .workbench/runs/<批次>/candidate/data.json
+python3 <Skill>/scripts/workbench.py validate .workbench/runs/<批次>/candidate/data.json
 python3 <Skill>/scripts/release.py . .workbench/runs/<批次>/candidate .workbench/runs/<批次>/quality-review.json --check-only
 python3 <Skill>/scripts/release.py . .workbench/runs/<批次>/candidate .workbench/runs/<批次>/quality-review.json
 ```
@@ -49,7 +49,7 @@ prepare 不修改正式数据，会检查：唯一 ID、节点与原文/日期/�
 
 发布成功将返回状态、备份位置及新哈希。release 自动保存 `candidate/published.json` 与 `candidate/quality-receipt.json`，连同 candidate/report.json 用于继续；旧批次的运行目录 published.json 仍可作为历史证据。即使来不及写成功回执，也可比对正式文件与候选哈希确认是否已发布，不能盲目再执行。相同内容返回 unchanged，不制造额外备份。
 
-发布后更新清单并运行当前 Skill 的 `scripts/next_step.py <工作台>`。仍有授权范围内可执行内容时继续，不以当前批次页面验收通过作为结束条件。首次历史未完成时尤其不能跳过此步骤。用户明确仅更新某段时间或暂停历史时，服从该指令并保留历史待办，不用全历史清单扩大本次授权；结束检查针对本次已授权工作，说明仍保留的历史缺口。
+发布后更新清单并运行当前 Skill 的 `scripts/next_step.py <工作台>`。仍有授权范围内可执行内容时继续，不以当前批次页面验收通过作为结束条件。首次历史未完成时尤其不能跳过此步骤。用户明确仅更新某段时间时，完成并核验该范围，保留其他历史待办；next_step 检查的是整份历史清单，返回的范围外待办用于披露，不扩大本次授权，也不为通过检查而改成 paused 或 complete。只有用户明确暂停历史才记 paused；用户要求恢复时改回 in_progress。
 
 ## 4. 页面验收与完成
 
@@ -62,7 +62,7 @@ prepare 不修改正式数据，会检查：唯一 ID、节点与原文/日期/�
 - prepare/校验失败：正式数据不变；修正来源或批次，重建候选。已有消息正文改变会被拒绝，先查是否旧导出截断；不能仅为了通过而改原文。此版不自动纠正旧消息正文，需单独处理所有关联引用并审阅迁移。
 - 基线变化：另一个批次已发布。重新读取正式数据并重新整理，不只改 baseSha256 强行覆盖。
 - 磁盘满/写入失败：检查正式文件与备份，释放空间后重试；不能删除正式文件再写。
-- 新数据发布后需回退：选择本工作台 `.workbench/backups/` 中确定的一份，先 validate，再 `python3 scripts/workbench.py rollback . <备份绝对路径>`。会先保留当前数据的备份，再恢复。回退数据不修改用户分类配置与浏览器存储；如配置曾变化，需一并核对兼容性。
+- 新数据发布后需回退：选择本工作台 `.workbench/backups/` 中确定的一份，先 validate，再 `python3 <Skill>/scripts/workbench.py rollback . <备份绝对路径>`。会先保留当前数据的备份，再恢复。回退数据不修改用户分类配置与浏览器存储；如配置曾变化，需一并核对兼容性。
 - 回退完成后：依据恢复后的正式数据重新核对历史清单与各窗口采集点，回退掉的批次重新进入待处理；不能沿用回退前的“已完成”状态跳过内容。
 - 中断：操作系统自动释放发布锁。不要以“有 update.lock 文件”为理由删除锁文件；文件存在不等于仍在写入。
 

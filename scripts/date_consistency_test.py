@@ -145,6 +145,24 @@ class DateConsistencyTest(unittest.TestCase):
             self.assertEqual((self.root/'data.json').read_bytes(), original)
         self.assertFalse((c/'published.json').exists())
 
+    def test_decision_date_must_match_its_evidence_node(self):
+        original = (self.root/'data.json').read_bytes()
+        for stamp in (EARLY, LATER, 'not-a-date'):
+            with self.subTest(stamp=stamp):
+                b = self.batch()
+                b['items'][0]['decisions'] = [{'text':'选择方案', 'label':'明确采用',
+                                              'node':'t:m1', 'date':stamp}]
+                with self.assertRaises(ValueError):
+                    self.prepare(b)
+                self.assertEqual((self.root/'data.json').read_bytes(), original)
+
+    def test_decision_date_accepts_equivalent_timezone(self):
+        b = self.batch()
+        b['items'][0]['decisions'] = [{'text':'选择方案', 'label':'明确采用',
+                                      'node':'t:m1', 'date':'2026-01-02T02:00:00Z'}]
+        candidate = self.prepare(b)
+        self.assertEqual(w.validate(w.read(candidate/'data.json'))['items'], 1)
+
     def test_template_contains_same_validator(self):
         skill = Path(__file__).resolve().parent.parent
         self.assertEqual((skill/'scripts/workbench.py').read_bytes(),

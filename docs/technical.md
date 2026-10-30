@@ -36,7 +36,7 @@ py -3 scripts/next_step_test.py
 py -3 scripts/launcher_test.py
 ```
 
-缺少时区数据时，应在同一 Python 环境安装 `requirements.txt` 中的依赖。自检只使用临时模拟数据，不读取个人聊天。quality_test 验证批次审查覆盖、证据引用、合法空结果和候选变更阻断；它不验证摘要的语义准确性。date_consistency_test 验证事项/对话日期与各自最新记录一致、旧记录补录、时区等价和无关消息不改变事项日期，并检查错误候选不能发布且正式数据不变。常规发布通过当前 Skill 的 release.py，详见 [整理与发布检查](../references/quality-review.md)。
+缺少时区数据时，应在同一 Python 环境安装 `requirements.txt` 中的依赖。自检只使用临时模拟数据，不读取个人聊天。quality_test 验证批次审查覆盖、证据引用、合法空结果和候选变更阻断；它不验证摘要的语义准确性。date_consistency_test 验证事项/对话日期与各自最新记录一致、决定日期与证据节点一致、旧记录补录、时区等价和无关消息不改变事项日期，并检查错误候选不能发布且正式数据不变。常规发布通过当前 Skill 的 release.py，详见 [整理与发布检查](../references/quality-review.md)。
 
 ## 数据放在哪里
 

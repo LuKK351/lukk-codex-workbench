@@ -170,6 +170,9 @@ def validate(data):
         for dec in item['decisions']:
             require(dec['node'] in nodes, '决定引用不存在')
             text_fields(dec, ('text', 'label', 'date'), '决定')
+            require(date(dec['date']) == date(nodes[dec['node']]['date']),
+                    '决定日期与证据节点不一致: ' + item['id'] + ' / ' + dec['node'] +
+                    '，当前 ' + dec['date'] + '，证据 ' + nodes[dec['node']]['date'])
         require(all(x in items for x in item.get('related', [])), '关联事项不存在')
     for task in tasks.values():
         require(task['item'] in items, '任务事项不存在')
