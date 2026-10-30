@@ -22,6 +22,7 @@ python3 scripts/self_test.py
 python3 scripts/quality_test.py
 python3 scripts/date_consistency_test.py
 python3 scripts/next_step_test.py
+python3 scripts/launcher_test.py
 ```
 
 ```powershell
@@ -30,6 +31,7 @@ py -3 scripts/self_test.py
 py -3 scripts/quality_test.py
 py -3 scripts/date_consistency_test.py
 py -3 scripts/next_step_test.py
+py -3 scripts/launcher_test.py
 ```
 
 缺少时区数据时，应在同一 Python 环境安装 `requirements.txt` 中的依赖。自检只使用临时模拟数据，不读取个人聊天。quality_test 验证批次审查覆盖、证据引用、合法空结果和候选变更阻断；它不验证摘要的语义准确性。date_consistency_test 验证事项/对话日期与各自最新记录一致、旧记录补录、时区等价和无关消息不改变事项日期，并检查错误候选不能发布且正式数据不变。常规发布通过当前 Skill 的 release.py，详见 [整理与发布检查](../references/quality-review.md)。
@@ -65,3 +67,13 @@ requirements.txt         时区数据依赖
 ```
 
 遇到问题可在 [Issues](https://github.com/LuKK351/lukk-codex-workbench/issues) 描述操作系统、操作步骤和错误提示。提交前去掉私人对话、路径中的个人信息及凭据，不上传完整个人工作台。
+
+## 打开入口与登录启动
+
+macOS 使用用户桌面 `.app` 与可选 `~/Library/LaunchAgents`；Windows 使用桌面 `.lnk` 与用户 Startup 文件夹，不安装系统级服务。桌面入口检查原工作台身份和固定 URL，再后台启动阅读服务；健康检查只返回工作台标识、目录哈希和进程号，不返回原路径或聊天内容。默认不启用登录启动。具体操作与撤销方式见 [打开与维护](../references/maintenance.md)。
+
+`launcher_test.py` 验证父进程结束后仍可访问、重复/并发打开、退出后恢复、占用冲突、配置与浏览器失效、入口修复与撤销。Windows 主机上会实际创建并读取 `.lnk`、触发无浏览器启动；其他系统上跳过该实机分支，只验证 Windows 参数生成。`desktop_native_test.py` 在 macOS GUI 会话中真实调用 LaunchServices 和 launchd，使用临时工作台与模拟浏览器、自动清理；这不等于实际注销/重启验收。
+
+GitHub Actions 对 macOS、Windows、Linux 运行隔离测试。CI 的通过记录只覆盖相应测试，不代表所有用户桌面策略、系统登录项设置或整机重启场景均已验证。
+
+系统接口依据：[Windows 快捷方式](https://learn.microsoft.com/en-us/troubleshoot/windows-client/admin-development/create-desktop-shortcut-with-wsh)、[Windows 启动应用](https://support.microsoft.com/en-us/windows/experience/startup-boot/configure-startup-applications-in-windows)、macOS 本机 `man launchd.plist`（RunAtLoad、AbandonProcessGroup）。

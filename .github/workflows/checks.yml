@@ -1,0 +1,22 @@
+name: Workbench checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  isolated-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt
+      - run: python -B scripts/launcher_test.py
+      - run: python -B scripts/self_test.py
+      - run: python -B scripts/date_consistency_test.py
+      - run: python -B scripts/quality_test.py
+      - run: python -B scripts/next_step_test.py

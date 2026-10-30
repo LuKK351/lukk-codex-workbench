@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import shutil
 import sys
+import uuid
 from workbench import load_timezone, configure_console, atomic, encode
 
 
@@ -18,7 +19,7 @@ def initialize(destination, since, until, timezone, port=8770):
     if destination.exists(): raise ValueError('目标目录已存在；更新现有工作台请使用 prepare/publish')
     source = Path(__file__).resolve().parents[1] / 'assets/template'
     shutil.copytree(source, destination)
-    settings = {'version': 1, 'pythonExecutable': sys.executable, 'timezone': timezone, 'initialRange': {'start': since, 'end': until},
+    settings = {'version': 1, 'workbenchId': str(uuid.uuid4()), 'pythonExecutable': sys.executable, 'timezone': timezone, 'initialRange': {'start': since, 'end': until},
                 'port': port, 'url': f'http://127.0.0.1:{port}/', 'sources': ['codex'],
                 'createdAt': dt.datetime.now(zone).isoformat()}
     (destination / 'config/workbench.json').write_text(json.dumps(settings, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
