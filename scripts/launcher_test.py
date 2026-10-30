@@ -52,6 +52,11 @@ class LauncherTests(unittest.TestCase):
         self.children.discard(pid)
 
     def tearDown(self):
+        if any(error for test, error in self._outcome.result.errors + self._outcome.result.failures if test is self):
+            log = self.root / '.workbench/service.log'
+            if log.exists():
+                print('SERVICE DIAGNOSTIC:', log.read_text(encoding='utf-8', errors='replace')[-12000:])
+            print('EXPECTED IDENTITY:', launcher.identity(self.root, self.config))
         for pid in list(self.children):
             self.stop(pid)
         self.assertEqual((self.root / 'data.json').read_bytes(), self.before)
