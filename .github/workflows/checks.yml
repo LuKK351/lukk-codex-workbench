@@ -19,5 +19,6 @@ jobs:
       - run: python -B scripts/launcher_test.py
       - run: python -B scripts/self_test.py
       - run: python -B scripts/date_consistency_test.py
+      - run: python -B scripts/organization_time_test.py
       - run: python -B scripts/quality_test.py
       - run: python -B scripts/next_step_test.py

@@ -21,6 +21,7 @@ Codex 会协助检查依赖。维护者可在 Skill 目录执行隔离自检：
 python3 scripts/self_test.py
 python3 scripts/quality_test.py
 python3 scripts/date_consistency_test.py
+python3 scripts/organization_time_test.py
 python3 scripts/next_step_test.py
 python3 scripts/launcher_test.py
 ```
@@ -30,6 +31,7 @@ python3 scripts/launcher_test.py
 py -3 scripts/self_test.py
 py -3 scripts/quality_test.py
 py -3 scripts/date_consistency_test.py
+py -3 scripts/organization_time_test.py
 py -3 scripts/next_step_test.py
 py -3 scripts/launcher_test.py
 ```
@@ -77,3 +79,5 @@ macOS 使用用户桌面 `.app` 与可选 `~/Library/LaunchAgents`；Windows 使
 GitHub Actions 对 macOS、Windows、Linux 运行隔离测试，[2026-10-30 三系统通过记录](https://github.com/LuKK351/lukk-codex-workbench/actions/runs/40989545973)。CI 的通过记录只覆盖相应测试，不代表所有用户桌面策略、系统登录项设置或整机重启场景均已验证。
 
 系统接口依据：[Windows 快捷方式](https://learn.microsoft.com/en-us/windows/win32/shell/links)、[Windows 启动应用](https://support.microsoft.com/en-us/windows/experience/startup-boot/configure-startup-applications-in-windows)、macOS 本机 `man launchd.plist`（RunAtLoad、AbandonProcessGroup）。
+
+最近整理显示 `organizedAt`（生成这一版整理内容的具体时间）；本轮读取截止显示 `collectionCutoff`。二者均按工作台时区展示，启动/刷新网页不会更新时间。旧版没有具体时间时明确显示未记录，不补造零点；实际覆盖及缺口仍以收录范围为准。

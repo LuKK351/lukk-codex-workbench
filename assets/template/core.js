@@ -19,6 +19,8 @@
  function date(v){return asDate(v).toLocaleDateString('zh-CN',{timeZone:typeof v==='string'&&v.length===10?'UTC':ZONE,year:'numeric',month:'2-digit',day:'2-digit'});}
  function clock(v){return typeof v==='string'&&v.length===10?'时间未记录':asDate(v).toLocaleTimeString('zh-CN',{timeZone:ZONE,hour12:false,hour:'2-digit',minute:'2-digit'});}
 
+ function dateTime(v){return date(v)+' '+clock(v);}
+
  function words(q){return [...new Set(String(q||'').normalize('NFKC').toLowerCase().trim().split(/\s+/).filter(Boolean))];}
  function matches(text,terms){const body=String(text||'').toLowerCase();return terms.length>0&&terms.every(w=>body.includes(w));}
  function dailyGroups(items,range){
@@ -216,5 +218,5 @@
  }
  function plainExcerpt(text){return String(text||'').replace(/!\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/\[([^\]]+)\]\((?:<[^>]*>|[^)])*\)/g,'$1').replace(/(?:\/Users\/|\/private\/)[^\s<>]+/g,'[本地文件路径]').replace(/https?:\/\/[^\s<>]+/g,'[链接]').replace(/\*\*|__|`+/g,'').replace(/^\s{0,3}#{1,6}\s+/gm,'').replace(/\s+/g,' ').trim();}
  function eventSummary(n){const text=String(n.event||'').replace(/[；，。]?具体说法见下方原话[。]?/g,'').trim();return text.replace(/[。；]$/,'')===String(n.title).replace(/[。；]$/,'')?'':text;}
- const api={setTimeZone,asDate,dayKey,age,relative,inRange,rangeBounds,date,clock,words,matches,nearby,parseQuery,queryTokens,dailyGroups,searchData,excerpts,plainExcerpt,eventSummary};if(typeof module==='object')module.exports=api;else root.Workbench=api;
+ const api={setTimeZone,asDate,dayKey,age,relative,inRange,rangeBounds,date,clock,dateTime,words,matches,nearby,parseQuery,queryTokens,dailyGroups,searchData,excerpts,plainExcerpt,eventSummary};if(typeof module==='object')module.exports=api;else root.Workbench=api;
 })(typeof window!=='undefined'?window:globalThis);

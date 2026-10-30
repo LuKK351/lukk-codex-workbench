@@ -126,6 +126,14 @@ def latest_date_matches(row, children, label):
 def validate(data):
     text_fields(data, ('snapshot', 'checked', 'scopeDescription'), '数据')
     date(data['snapshot'])
+    for key in ('organizedAt', 'collectionCutoff'):
+        if key in data:
+            value = data[key]
+            require(isinstance(value, str) and 'T' in value, key + ' 必须含具体时间')
+            parsed = dt.datetime.fromisoformat(value.replace('Z', '+00:00'))
+            require(parsed.tzinfo is not None, key + ' 必须含时区')
+    if data.get('collectionCutoff') and data.get('organizedAt'):
+        require(date(data['collectionCutoff']) <= date(data['organizedAt']), '读取截止时间不能晚于整理时间')
     zone = load_timezone(data.get('timezone', 'Asia/Shanghai'))
     types = indexed(data['types'], 'types')
     threads = indexed(data['threads'], 'threads')
@@ -230,7 +238,7 @@ def prepare(root, batchpath, destination):
     require(isinstance(batch.get('provenance'), list) and bool(batch['provenance']), '缺少来源采集清单')
     for entry in batch['provenance']:
         require(isinstance(entry, dict) and entry.get('method') and entry.get('status') in ('complete', 'partial', 'failed'), '来源清单缺少 method 或有效 status')
-    require(set(batch) <= {'version','baseSha256','provenance','threads','items','tasks','retireTasks','dailySummaries','snapshot','checked','scopeDescription'}, '批次存在未支持字段')
+    require(set(batch) <= {'version','baseSha256','provenance','threads','items','tasks','retireTasks','dailySummaries','snapshot','checked','scopeDescription','organizedAt','collectionCutoff'}, '批次存在未支持字段')
     for key in ('threads', 'items', 'tasks'):
         data[key] = merge_rows(data[key], batch.get(key, []), key)
     retired = indexed(batch.get('retireTasks', []), 'retireTasks')
@@ -245,11 +253,15 @@ def prepare(root, batchpath, destination):
         require(not any(t['id'] == tid for t in batch.get('tasks', [])), '同批不能既更新又移除任务')
     data['tasks'] = [t for t in data['tasks'] if t['id'] not in retired]
     data.setdefault('dailySummaries', {}).update(batch.get('dailySummaries', {}))
-    for key in ('snapshot', 'checked', 'scopeDescription'):
+    for key in ('snapshot', 'checked', 'scopeDescription', 'organizedAt', 'collectionCutoff'):
         if key in batch:
             data[key] = batch[key]
     require(date(data['snapshot']) >= date(json.loads(original)['snapshot']), '快照时间不能倒退')
     config_types(root, data)
+    if data != json.loads(original) and 'organizedAt' not in batch:
+        # Timestamp the prepared content, never a browser refresh or service start.
+        # Unchanged retries preserve the timestamp and remain idempotent.
+        data['organizedAt'] = dt.datetime.now(dt.timezone.utc).isoformat(timespec='seconds')
     counts = validate(data)
     raw = encode(data)
     report = {'version': 1, 'baseSha256': sha(original), 'candidateSha256': sha(raw),

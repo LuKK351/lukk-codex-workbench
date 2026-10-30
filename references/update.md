@@ -28,7 +28,7 @@
 
 读 curation.md 和 [整理与发布检查](quality-review.md)。优先完成已读未整理的区段；本批完整检查后再扩展新批次。检索已有目标，更新对应事项。每个 upsert 是**完整记录**，已有节点与消息会按 ID 合并保留，但顶层摘要等字段以本批完整记录为准。只补历史时保持当前最新小结与 date，不将旧状态当最新。thread.date 同样保持合并后最新消息日期；不能把本批旧消息的日期写成窗口最新日期。保留已有相关事项与分支。
 
-`python3 scripts/workbench.py hash data.json` 得到 baseSha256，写入 batch.json；从读取这个基线开始整理。同批 `provenance` 记录每个已读/失败窗口及范围。`scopeDescription` 应准确描述累计实际覆盖，不宣称全量，不只写本次新增数。时间窗口固定在本次开始时刻。参照 data-contract.md。
+`python3 <Skill>/scripts/workbench.py hash data.json` 得到 baseSha256，写入 batch.json；从读取这个基线开始整理。同批 `provenance` 记录每个已读/失败窗口及范围。`scopeDescription` 应准确描述累计实际覆盖，不宣称全量，不只写本次新增数。时间窗口固定在本次开始时刻，并以含时区的 ISO 时间写入 batch.collectionCutoff；不要只记录日期。使用当前 Skill 的 prepare 生成候选，它会在内容变化时自动写 organizedAt；普通更新不要手填这个时间。两者分别表示本轮读取上界与整理内容生成时间，不把有缺口的上界宣称为全部收录完成。参照 data-contract.md。
 
 缺失窗口不放虚构空消息；成功部分可以发布，但清楚说明部分完成，失败游标不推进。无新增且无整理修正时不用生成和发布空批次。首次历史范围外的补录需用户授权。
 
@@ -37,7 +37,7 @@
 先按 quality-review.md 对准备后的候选填写检查记录。以下工作台路径相对于选定目录；`<Skill>` 替换为当前安装 Skill 的绝对目录（release.py 使用当前 Skill 的发布逻辑，兼容原数据契约），命令参数按实际路径安全引用：
 
 ```sh
-python3 scripts/workbench.py prepare . .workbench/runs/<批次>/batch.json .workbench/runs/<批次>/candidate
+python3 <Skill>/scripts/workbench.py prepare . .workbench/runs/<批次>/batch.json .workbench/runs/<批次>/candidate
 python3 scripts/workbench.py validate .workbench/runs/<批次>/candidate/data.json
 python3 <Skill>/scripts/release.py . .workbench/runs/<批次>/candidate .workbench/runs/<批次>/quality-review.json --check-only
 python3 <Skill>/scripts/release.py . .workbench/runs/<批次>/candidate .workbench/runs/<批次>/quality-review.json
