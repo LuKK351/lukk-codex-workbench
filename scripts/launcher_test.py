@@ -66,7 +66,7 @@ class LauncherTests(unittest.TestCase):
         recovered = self.track(launcher.ensure(self.root))
         self.assertNotEqual(recovered['pid'], result['pid'])
         self.assertEqual(recovered['url'], self.config['url'])
-        self.assertEqual(json.loads((self.root / 'config/workbench.json').read_text())['url'], self.config['url'])
+        self.assertEqual(json.loads((self.root / 'config/workbench.json').read_text(encoding='utf-8'))['url'], self.config['url'])
 
     def test_simultaneous_clicks_share_one_service(self):
         processes = [subprocess.Popen([sys.executable, str(self.script), str(self.root), '--ensure-only'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) for _ in range(4)]
@@ -89,7 +89,7 @@ class LauncherTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, '占用'):
                 launcher.ensure(self.root)
             self.assertEqual(launcher.probe(self.root, self.config)['status'], 'conflict')
-            self.assertEqual(json.loads((self.root / 'config/workbench.json').read_text())['port'], self.config['port'])
+            self.assertEqual(json.loads((self.root / 'config/workbench.json').read_text(encoding='utf-8'))['port'], self.config['port'])
         finally:
             server.shutdown(); server.server_close(); thread.join()
 
@@ -99,7 +99,7 @@ class LauncherTests(unittest.TestCase):
         with patch.object(sys, 'argv', ['launcher.py', str(self.root)]), patch.object(launcher, 'open_browser') as browser:
             self.assertEqual(launcher.main(), 1)
             browser.assert_not_called()
-        text = (self.root / '.workbench/launcher-error.txt').read_text()
+        text = (self.root / '.workbench/launcher-error.txt').read_text(encoding='utf-8')
         self.assertIn('不要重新初始化', text)
         self.assertIn('运行环境已不存在', text)
 
@@ -160,7 +160,7 @@ class LauncherTests(unittest.TestCase):
         (other / 'private.txt').write_text('leave me')
         installed = desktop.install(self.root, directory)
         self.assertNotEqual(installed['entry'], str(other))
-        self.assertEqual((other / 'private.txt').read_text(), 'leave me')
+        self.assertEqual((other / 'private.txt').read_text(encoding='utf-8'), 'leave me')
         entry = Path(installed['entry'])
         (entry / 'user-note.txt').write_text('preserve')
         with self.assertRaisesRegex(ValueError, '手动修改'):

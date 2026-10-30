@@ -29,7 +29,10 @@ def powershell_args(code):
 
 def powershell(code):
     result = subprocess.run(['powershell.exe', *powershell_args("$ErrorActionPreference='Stop';\n" + code)],
-                            capture_output=True, check=True, timeout=30)
+                            capture_output=True, timeout=30)
+    if result.returncode:
+        detail = result.stderr.decode('utf-8', errors='replace')[-4000:]
+        raise ValueError('Windows 入口操作失败：' + detail)
     # Explicit UTF-8 console output avoids the user's legacy console code page.
     return result.stdout.decode('utf-8-sig').strip()
 
